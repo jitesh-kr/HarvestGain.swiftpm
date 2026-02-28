@@ -10,7 +10,7 @@ import AppleProductTypes
 let package = Package(
     name: "HarvestGain",
     platforms: [
-        .iOS("16.0")
+        .iOS("17.0")
     ],
     products: [
         .iOSApplication(
@@ -20,7 +20,7 @@ let package = Package(
             teamIdentifier: "Y69BPL42DR",
             displayVersion: "1.0",
             bundleVersion: "1",
-            appIcon: .placeholder(icon: .leaf),
+            appIcon: .asset("AppIcon"),
             accentColor: .presetColor(.green),
             supportedDeviceFamilies: [
                 .pad,
@@ -32,7 +32,8 @@ let package = Package(
                 .landscapeLeft,
                 .portraitUpsideDown(.when(deviceFamilies: [.pad]))
             ],
-            appCategory: .healthcareFitness
+            appCategory: .healthcareFitness,
+            additionalInfoPlistContentFilePath: "Info.plist"
         )
     ],
     targets: [

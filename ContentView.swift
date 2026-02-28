@@ -1,51 +1,36 @@
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some View {
         if hasCompletedOnboarding {
-            MainView()
+            MainTabView()
         } else {
             OnboardingView()
         }
     }
 }
 
-// MARK: - Main View (Post-Onboarding)
-
-struct MainView: View {
+struct MainTabView: View {
     var body: some View {
-        NavigationStack {
-            ZStack {
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.04, green: 0.08, blue: 0.04),
-                        Color(red: 0.06, green: 0.14, blue: 0.08)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
-
-                VStack(spacing: 20) {
-                    Image(systemName: "leaf.circle.fill")
-                        .font(.system(size: 60))
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(.green)
-
-                    Text("Welcome to HarvestGain")
-                        .font(.title2.bold())
-                        .foregroundColor(.white)
-
-                    Text("Your Farm-to-Muscle journey starts here.")
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.6))
+        TabView {
+            DashboardView()
+                .tabItem {
+                    Label("Dashboard", systemImage: "leaf.fill")
                 }
-            }
-            .navigationTitle("Dashboard")
-            .navigationBarTitleDisplayMode(.inline)
-            .preferredColorScheme(.dark)
+
+            GardenView()
+                .tabItem {
+                    Label("Garden", systemImage: "camera.macro")
+                }
+
+            ProfileView()
+                .tabItem {
+                    Label("Profile", systemImage: "person.crop.circle")
+                }
         }
+        .preferredColorScheme(.dark)
     }
 }

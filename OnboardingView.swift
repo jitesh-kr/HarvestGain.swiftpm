@@ -1,39 +1,11 @@
 import SwiftUI
 
-// MARK: - Fitness Goal Enum
-
-enum FitnessGoal: String, CaseIterable, Identifiable {
-    case bulking = "Bulking"
-    case cutting = "Cutting"
-
-    var id: String { rawValue }
-
-    var icon: String {
-        switch self {
-        case .bulking: return "figure.strengthtraining.traditional"
-        case .cutting: return "figure.run"
-        }
-    }
-
-    var subtitle: String {
-        switch self {
-        case .bulking: return "Build muscle with nutrient-dense crops"
-        case .cutting: return "Lean out with low-calorie superfoods"
-        }
-    }
-}
-
 // MARK: - Onboarding View
 
 struct OnboardingView: View {
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    @State private var currentPage = 0
-    @State private var selectedGoal: FitnessGoal = .bulking
-    @State private var healthAuthorized = false
-    @State private var animateSymbol = false
+    @StateObject private var viewModel = OnboardingViewModel()
 
     private let accentGreen = Color.green
-    private let darkGreen = Color(red: 0.1, green: 0.4, blue: 0.2)
 
     var body: some View {
         ZStack {
@@ -41,19 +13,21 @@ struct OnboardingView: View {
             backgroundGradient
                 .ignoresSafeArea()
 
-            TabView(selection: $currentPage) {
+            TabView(selection: $viewModel.currentPage) {
                 welcomePage.tag(0)
                 howItWorksPage.tag(1)
                 setupPage.tag(2)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .animation(.easeInOut(duration: 0.3), value: currentPage)
+            .animation(.easeInOut(duration: 0.3), value: viewModel.currentPage)
 
             // Skip button (top-right) + custom page indicator (bottom)
             VStack {
                 HStack {
                     Spacer()
-                    Button(action: completeOnboarding) {
+                    Button(action: {
+                        withAnimation { viewModel.currentPage = 2 }
+                    }) {
                         Text("Skip")
                             .font(.subheadline)
                             .fontWeight(.medium)
@@ -73,7 +47,7 @@ struct OnboardingView: View {
                 // Custom page indicator
                 HStack(spacing: 8) {
                     ForEach(0..<3, id: \.self) { index in
-                        if index == currentPage {
+                        if index == viewModel.currentPage {
                             Capsule()
                                 .fill(accentGreen)
                                 .frame(width: 28, height: 8)
@@ -84,7 +58,7 @@ struct OnboardingView: View {
                         }
                     }
                 }
-                .animation(.spring(response: 0.35, dampingFraction: 0.7), value: currentPage)
+                .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.currentPage)
                 .padding(.bottom, 28)
             }
         }
@@ -133,10 +107,10 @@ struct OnboardingView: View {
                     .font(.system(size: 80))
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(accentGreen)
-                    .scaleEffect(animateSymbol ? 1.05 : 1.0)
+                    .scaleEffect(viewModel.animateSymbol ? 1.05 : 1.0)
                     .animation(
                         .easeInOut(duration: 2.0).repeatForever(autoreverses: true),
-                        value: animateSymbol
+                        value: viewModel.animateSymbol
                     )
             }
 
@@ -184,7 +158,7 @@ struct OnboardingView: View {
             .padding(.bottom, 60)
         }
         .padding()
-        .onAppear { animateSymbol = true }
+        .onAppear { viewModel.animateSymbol = true }
     }
 
     // MARK: - Page 2: How It Works
@@ -276,10 +250,66 @@ struct OnboardingView: View {
                 .font(.system(size: 30, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
 
-            Text("Set your fitness direction and connect\nApple Health for the full experience.")
+            Text("Tell us about yourself and set your\nfitness direction to get started.")
                 .font(.subheadline)
                 .foregroundColor(.white.opacity(0.6))
                 .multilineTextAlignment(.center)
+
+            // Personal Details Card
+            VStack(alignment: .leading, spacing: 16) {
+                Label("About You", systemImage: "person.fill")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white.opacity(0.8))
+
+                VStack(spacing: 12) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "person.text.rectangle")
+                            .foregroundColor(accentGreen)
+                            .frame(width: 20)
+                        TextField("Your Name", text: $viewModel.draftName)
+                            .foregroundColor(.white)
+                            .autocorrectionDisabled()
+                    }
+                    .padding(14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(.white.opacity(0.06))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .strokeBorder(accentGreen.opacity(viewModel.draftName.isEmpty ? 0.15 : 0.4), lineWidth: 1)
+                            )
+                    )
+
+                    HStack(spacing: 12) {
+                        Image(systemName: "briefcase.fill")
+                            .foregroundColor(accentGreen)
+                            .frame(width: 20)
+                        TextField("Your Profession (optional)", text: $viewModel.draftProfession)
+                            .foregroundColor(.white)
+                            .autocorrectionDisabled()
+                    }
+                    .padding(14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(.white.opacity(0.06))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .strokeBorder(.white.opacity(0.1), lineWidth: 1)
+                            )
+                    )
+                }
+            }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+                    )
+            )
+            .padding(.horizontal, 20)
 
             // Goal Picker
             VStack(alignment: .leading, spacing: 12) {
@@ -288,7 +318,7 @@ struct OnboardingView: View {
                     .fontWeight(.semibold)
                     .foregroundColor(.white.opacity(0.8))
 
-                Picker("Fitness Goal", selection: $selectedGoal) {
+                Picker("Fitness Goal", selection: $viewModel.selectedGoal) {
                     ForEach(FitnessGoal.allCases) { goal in
                         Text(goal.rawValue).tag(goal)
                     }
@@ -297,10 +327,10 @@ struct OnboardingView: View {
 
                 // Goal detail card
                 HStack(spacing: 12) {
-                    Image(systemName: selectedGoal.icon)
+                    Image(systemName: viewModel.selectedGoal.icon)
                         .font(.title2)
                         .foregroundColor(accentGreen)
-                    Text(selectedGoal.subtitle)
+                    Text(viewModel.selectedGoal.subtitle)
                         .font(.subheadline)
                         .foregroundColor(.white.opacity(0.7))
                 }
@@ -323,18 +353,18 @@ struct OnboardingView: View {
             .padding(.horizontal, 20)
 
             // Health Authorization Button
-            Button(action: authorizeHealth) {
+            Button(action: viewModel.authorizeHealth) {
                 HStack(spacing: 10) {
-                    Image(systemName: healthAuthorized ? "checkmark.circle.fill" : "heart.fill")
+                    Image(systemName: viewModel.healthAuthorized ? "checkmark.circle.fill" : "heart.fill")
                         .font(.body.weight(.semibold))
-                        .foregroundColor(healthAuthorized ? .green : .pink)
+                        .foregroundColor(viewModel.healthAuthorized ? .green : .pink)
 
-                    Text(healthAuthorized ? "Apple Health Connected" : "Connect Apple Health")
+                    Text(viewModel.healthAuthorized ? "Apple Health Connected" : "Connect Apple Health")
                         .fontWeight(.semibold)
 
                     Spacer()
 
-                    if !healthAuthorized {
+                    if !viewModel.healthAuthorized {
                         Image(systemName: "arrow.right.circle.fill")
                             .foregroundColor(.white.opacity(0.4))
                     }
@@ -347,7 +377,7 @@ struct OnboardingView: View {
                         .overlay(
                             RoundedRectangle(cornerRadius: 16, style: .continuous)
                                 .strokeBorder(
-                                    healthAuthorized ? accentGreen.opacity(0.3) : .white.opacity(0.08),
+                                    viewModel.healthAuthorized ? accentGreen.opacity(0.3) : .white.opacity(0.08),
                                     lineWidth: 1
                                 )
                         )
@@ -359,43 +389,35 @@ struct OnboardingView: View {
             Spacer()
 
             // Get Started Button
-            Button(action: completeOnboarding) {
+            Button(action: viewModel.completeOnboarding) {
                 Text("Get Started")
                     .font(.headline)
-                    .foregroundColor(.black)
+                    .foregroundColor(viewModel.canProceed ? .black : .white.opacity(0.3))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 18)
                     .background(
                         Capsule()
                             .fill(
-                                LinearGradient(
+                                viewModel.canProceed
+                                ? LinearGradient(
                                     colors: [accentGreen, Color(red: 0.2, green: 0.8, blue: 0.4)],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
+                                : LinearGradient(
+                                    colors: [.white.opacity(0.1), .white.opacity(0.1)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
                             )
-                            .shadow(color: accentGreen.opacity(0.4), radius: 12, y: 6)
+                            .shadow(color: viewModel.canProceed ? accentGreen.opacity(0.4) : .clear, radius: 12, y: 6)
                     )
             }
+            .disabled(!viewModel.canProceed)
+            .animation(.easeInOut(duration: 0.25), value: viewModel.canProceed)
             .padding(.horizontal, 32)
             .padding(.bottom, 60)
         }
         .padding()
-    }
-
-    // MARK: - Actions
-
-    private func authorizeHealth() {
-        // In a real app, request HealthKit authorization here.
-        // For the playground demo, we toggle the state.
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-            healthAuthorized = true
-        }
-    }
-
-    private func completeOnboarding() {
-        withAnimation(.easeInOut(duration: 0.4)) {
-            hasCompletedOnboarding = true
-        }
     }
 }
